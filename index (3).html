@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Productivity Dashboard</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2rem; }
+  h1 { text-align: center; }
+  .summary { max-width: 500px; margin: auto; }
+  .bar {
+    height: 30px;
+    margin: 10px 0;
+    color: white;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    padding-left: 10px;
+  }
+  .productive { background: #2ecc71; }
+  .unproductive { background: #e74c3c; }
+  .neutral { background: #95a5a6; }
+</style>
+</head>
+<body>
+  <h1>Weekly Productivity Report</h1>
+  <div class="summary">
+    <button onclick="loadAnalytics()">Load Analytics</button>
+    <p id="status"></p>
+    <div id="analytics"></div>
+  </div>
+
+  <script>
+    const userId = 'demo-user'; // replace with real user id in prod
+
+    function msToHMS(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds - hours * 3600) / 60);
+      return `${hours}h ${minutes}m`;
+    }
+
+    async function loadAnalytics() {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Loading...';
+      try {
+        const res = await fetch(`http://localhost:5000/api/dashboard/${userId}`);
+        const data = await res.json();
+        statusEl.textContent = '';
+
+        if (data.error) {
+          statusEl.textContent = 'Error loading analytics';
+          return;
+        }
+
+        const container = document.getElementById('analytics');
+        container.innerHTML = '';
+
+        function createBar(className, label, value, total) {
+          const percent = total > 0 ? (value / total) * 100 : 0;
+          const bar = document.createElement('div');
+          bar.className = 'bar ' + className;
+          bar.style.width = percent + '%';
+          bar.textContent = `${label}: ${msToHMS(value)}`;
+          return bar;
+        }
+
+        container.appendChild(createBar('productive', 'Productive Time', data.productiveTime, data.totalTime));
+        container.appendChild(createBar('unproductive', 'Unproductive Time', data.unproductiveTime, data.totalTime));
+        container.appendChild(createBar('neutral', 'Neutral Time', data.neutralTime, data.totalTime));
+
+      } catch (e) {
+        statusEl.textContent = 'Failed to load analytics.';
+      }
+    }
+  </script>
+</body>
+</html>
